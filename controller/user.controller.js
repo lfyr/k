@@ -18,7 +18,12 @@ class UserController {
     }
 
     async login(ctx, next) {
-        ctx.body = '用户登录成功'
+        const { user_name, password } = ctx.request.body
+        ctx.body = {
+            code: 0,
+            msg: '用户登录成功',
+            data: ''
+        }
     }
 }
 
