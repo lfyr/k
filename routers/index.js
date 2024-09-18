@@ -1,14 +1,12 @@
-const Rouoter = require('koa-router')
-const userRouter = require('./user.js')
-const homeRouter = require('./home.js')
-const router = new Rouoter()
+const fs = require('fs')
+const Router = require('koa-router')
+const router = new Router
 
-// 添加路由前缀
-router.prefix("/api");
-// 注册user路由组件
-router.use('/user', userRouter.routes(), userRouter.allowedMethods())
-
-router.use('/home', homeRouter.routes(), homeRouter.allowedMethods())
-router.redirect('/', '/home')
+fs.readdirSync(__dirname).forEach(file => {
+    if (file !== 'index.js') {
+        let r = require('./' + file)
+        router.use(r.routes())
+    }
+})
 
 module.exports = router

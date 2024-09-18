@@ -1,12 +1,25 @@
+const joi = require('joi')
+const bcrypt = require('bcryptjs')
 const { getUserInfo } = require('../service/user.service')
 const { userFormateError, userAlreadyExited, invalidPassword, userDoesNotExist, userLoginError } = require('../const/err.type')
-const bcrypt = require('bcryptjs')
+
 const userValidator = async (ctx, next) => {
     const { user_name, password } = ctx.request.body
-    if (!user_name || !password) {
-        console.error('用户名或密码为空', ctx.request.body)
+
+    // 定义验证规则
+    schema = joi.object({
+        user_name: joi.string().min(2).max(5).required(),
+        password: joi.string().regex(/^[a-zA-Z0-9]+$/).required()
+    });
+
+    try {
+        await schema.validateAsync({ user_name: user_name, password: password });
+    } catch (err) {
+        console.error(err)
+        userFormateError.msg = err.details[0].message
+        userFormateError.data = err.details[0]
         ctx.app.emit('error', userFormateError, ctx)
-        return
+        return;
     }
     await next()
 }
