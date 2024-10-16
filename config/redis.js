@@ -1,41 +1,53 @@
-const redis = require('ioredis');
+const Redis = require("ioredis");
+const url = require("url");
+const {
+  REDIS_HOST,
+  REDIS_POST,
+  REDIS_USER,
+  REDIS_PWD,
+  REDIS_DB,
+} = require("../config/config.default");
 
-function connectToRedis(host, port, password, db, maxRetries = 5, retryDelay = 2000) {
-    return new Promise((resolve, reject) => {
-        let retries = 0;
-
-        function attemptConnect() {
-            const client = new redis({
-                host: host,
-                port: port,
-                password: password,
-                db: db,
-                retryStrategy: () => retryDelay // 可选的，但这通常用于自动重连策略，而不是手动重试  
-            });
-
-            client.on('error', (err) => {
-                console.error('Redis connection error:', err);
-                if (retries < maxRetries) {
-                    retries++;
-                    console.log(`Retrying connection to Redis... (${retries}/${maxRetries})`);
-                    setTimeout(attemptConnect, retryDelay);
-                } else {
-                    reject(new Error('Failed to connect to Redis after multiple attempts.'));
-                }
-            });
-
-            client.on('connect', () => {
-                console.log('Successfully connected to Redis!');
-                resolve(client); // 连接成功后解析 Promise  
-            });
-
-            // 注意：我们移除了 retryStrategy 配置，因为我们在代码中手动处理了重试逻辑。  
-            // 如果需要自动重连（比如在网络短暂中断后），可以保留它并根据需要调整。  
-        }
-
-        attemptConnect();
-    });
+function createRedis(ops) {
+  return new Redis({
+    port: REDIS_POST,
+    host: REDIS_HOST,
+    password: REDIS_PWD,
+    db: REDIS_DB,
+    ...ops,
+  });
 }
 
+let redisStore = createRedis({
+  // 其他自定义配置，参见ioredis
+  // prefix:'dev',
+  retryStrategy(times) {
+    const delay = Math.min(times * 50, 5000);
+    return delay;
+  },
+});
 
-module.exports = connectToRedis;
+//用于广播
+let sub = createRedis({
+  // 其他自定义配置，参见ioredis
+  // prefix:'dev',
+  autoResubscribe: true, // 当重连时，自动重新订阅广播
+  retryStrategy(times) {
+    //自定义重试规则
+    const delay = Math.min(times * 50, 5000);
+    return delay;
+  },
+});
+
+// 测试
+// async function test() {
+//   let key = "tt_v";
+//   k = await redisStore.set(key, 100);
+
+//   k = await redisStore.get(key);
+
+//   k = await redisStore.del(key);
+//   console.log(k);
+// }
+// test();
+module.exports = { redisStore, sub };
