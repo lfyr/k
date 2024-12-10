@@ -10,6 +10,10 @@ const {
 } = require("../const/err.type");
 
 const userValidator = async (ctx, next) => {
+  if (!ctx.request.body) {
+    ctx.app.emit("error", userFormateError, ctx);
+    return;
+  }
   const { user_name, password } = ctx.request.body;
 
   // 定义验证规则
@@ -42,7 +46,7 @@ const verifyUser = async (ctx, next) => {
   await next();
 };
 
-const crpytPassword = async (ctx, next) => {
+const cryptPassword = async (ctx, next) => {
   const { password } = ctx.request.body;
   const salt = bcrypt.genSaltSync(10);
   const hash = bcrypt.hashSync(password, salt);
@@ -74,6 +78,6 @@ const verifyLogin = async (ctx, next) => {
 module.exports = {
   userValidator,
   verifyUser,
-  crpytPassword,
+  cryptPassword,
   verifyLogin,
 };
